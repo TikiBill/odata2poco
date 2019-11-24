@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 using OData2Poco.CustAttributes;
 using OData2Poco.TextTransform;
 
@@ -12,6 +11,31 @@ namespace OData2Poco
     /// </summary>
     internal class PocoClassGeneratorCs : IPocoClassGenerator
     {
+        public static PocoClassGeneratorCs GenerateCsPocoClass(IPocoGenerator pocoGen, PocoSetting setting)
+        {
+            setting = setting ?? new PocoSetting();
+            //add jsonproperty to properties/classes that are renamed
+            setting.Attributes.Add("original"); //v3.2
+            var generator = new PocoClassGeneratorCs(pocoGen, setting);
+
+            //initialize AttributeFactory to use pocosetting.Attributes
+            AttributeFactory.Default.Init(setting);
+            generator.ClassList = _pocoGen.GeneratePocoList();
+            //filter model
+            if (setting.Include?.Count > 0)
+                generator.ClassList = ModelFilter.FilterList(generator.ClassList, setting.Include).ToList();
+
+            //change case
+            if (generator.PocoSetting.EntityNameCase != CaseEnum.None)
+                ModelChangeCase.RenameClasses(generator.ClassList, setting.EntityNameCase);
+            //check reserved keywords
+            ModelManager.RenameReservedWords(generator.ClassList);
+            generator.Header = generator.GetHeader() ?? "";
+            CodeText = null;
+            return generator;
+
+        }
+
         string nl = Environment.NewLine;
 
         public string LangName { get; set; } = "csharp";
@@ -31,27 +55,10 @@ namespace OData2Poco
         /// </summary>
         /// <param name="pocoGen"></param>
         /// <param name="setting"></param>
-        public PocoClassGeneratorCs(IPocoGenerator pocoGen, PocoSetting setting = null)
+        private PocoClassGeneratorCs(IPocoGenerator pocoGen, PocoSetting setting)
         {
-            PocoSetting = setting ?? new PocoSetting();
+            PocoSetting = setting;
             _pocoGen = pocoGen;
-            //add jsonproperty to properties/classes that are renamed
-            PocoSetting?.Attributes.Add("original"); //v3.2
-
-            //initialize AttributeFactory to use pocosetting.Attributes
-            AttributeFactory.Default.Init(PocoSetting);
-            ClassList = _pocoGen.GeneratePocoList();
-            //filter model
-            if (setting?.Include?.Count > 0)
-                ClassList = ModelFilter.FilterList(ClassList, setting.Include).ToList();
-           
-            //change case
-            if (PocoSetting.EntityNameCase != CaseEnum.None)
-                ModelChangeCase.RenameClasses(ClassList, PocoSetting.EntityNameCase);
-            //check reserved keywords
-            ModelManager.RenameReservedWords(ClassList);
-            Header = GetHeader() ?? "";
-            CodeText = null;
         }
 
         /// <summary>
@@ -74,8 +81,8 @@ namespace OData2Poco
 
                 var namespc = PrefixNamespace(s);
                 template.StartNamespace(namespc);
-                var pocoModel2 = ClassList.Where(x => x.NameSpace == s);
-                foreach (var item in pocoModel2)
+                var pocoModel = ClassList.Where(x => x.NameSpace == s);
+                foreach (var item in pocoModel)
                 {
                     template.WriteLine(ClassToString(item));
                 }
