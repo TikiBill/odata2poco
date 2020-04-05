@@ -80,6 +80,16 @@ deploy:
     branch: master          # Release from master branch only.
     CAN_PUBLISH: true
 
+#GitHub
+- provider: NuGet
+  server: https://nuget.pkg.github.com/moh-hassan/index.json
+  artifact: /.*\.nupkg/ 
+  username: 
+    secure: I2yYSTsX/p2xV/9NP0sYiQ==
+  api_key:
+    secure: em4504r284mvwL8EsHedi8YZNBBm5E1qAO3T5sk4URJ4jZ1WTRqMrJh7aK6nOeP3
+   
+
 # myget
 - provider: NuGet
   server: https://www.myget.org/F/odata2poco/api/v2/package
@@ -87,6 +97,6 @@ deploy:
     secure: hSatieECG8d1qvzcQejfzQH8vQa4W0GbXU10/xVXvL4dloo1vZMlCdHZbpZkLMNW  
   symbol_server: https://www.myget.org/F/odata2poco/api/v2/package
   #artifact: /.*(\.|\.s)nupkg/    
-  #on:
+  on:
     #APPVEYOR_REPO_TAG: true
-    #branch: /develop|master/  
+    branch: master  
